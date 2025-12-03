@@ -1,5 +1,5 @@
 # Homebrew formula for Flux Circuits
-# This formula downloads from GitHub Releases (works with private repositories!)
+# This formula builds from source (requires public repository)
 # To use this formula, place it in your Homebrew tap repository:
 # https://github.com/shyamalschandra/homebrew-flux-circuits
 
@@ -16,10 +16,9 @@ class FluxCircuits < Formula
   depends_on "node"
   depends_on "gcc"
   
-  # Download from GitHub Releases (assets are public even from private repos)
-  # When you create a release, the tarball will be publicly accessible
-  url "https://github.com/shyamalschandra/idea2circuit/releases/download/v#{version}/flux-circuits-v#{version}.tar.gz"
-  sha256 "PLACEHOLDER_UPDATE_AFTER_CREATING_RELEASE"
+  # Build from source (GitHub repository must be public)
+  url "https://github.com/shyamalschandra/idea2circuit/archive/refs/tags/v#{version}.tar.gz"
+  sha256 "PLACEHOLDER_UPDATE_AFTER_MAKING_REPO_PUBLIC_AND_CREATING_TAG"
   
   def install
     # Debug: Print current directory and contents
