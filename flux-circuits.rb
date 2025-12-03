@@ -1,5 +1,5 @@
 # Homebrew formula for Flux Circuits
-# This formula downloads pre-built binaries from GitHub Releases
+# This formula builds from source from the GitHub repository
 # To use this formula, place it in your Homebrew tap repository:
 # https://github.com/shyamalschandra/homebrew-idea2circuit
 
@@ -16,26 +16,42 @@ class FluxCircuits < Formula
   depends_on "node"
   depends_on "gcc"
   
-  # Determine architecture
-  if Hardware::CPU.arm?
-    arch = "arm64"
-  else
-    arch = "x86_64"
-  end
-  
-  # Use universal binary if available, otherwise fall back to architecture-specific
-  # Update these URLs after creating a GitHub release
-  url "https://github.com/shyamalschandra/idea2circuit/releases/download/v#{version}/flux-circuits-universal.tar.gz"
-  # Alternative: use architecture-specific binary
-  # url "https://github.com/shyamalschandra/idea2circuit/releases/download/v#{version}/flux-circuits-#{arch}.tar.gz"
-  
-  # Calculate SHA256 after creating the release
-  # Run: shasum -a 256 flux-circuits-universal.tar.gz
-  # Note: This will be updated after the GitHub release is created with proper universal binary
-  # Update this value after creating a GitHub release
-  sha256 "PLACEHOLDER_SHA256_UPDATE_AFTER_RELEASE"
+  # Build from source (GitHub repository)
+  url "https://github.com/shyamalschandra/idea2circuit/archive/refs/tags/v#{version}.tar.gz"
+  sha256 "25d13d585f7e1f4e2b9526f97e9e37114939045658a041b56d641670b0bbd878"
   
   def install
+    # Debug: Print current directory and contents
+    ohai "Current directory: #{Dir.pwd}"
+    ohai "Directory contents: #{Dir.glob('*').join(', ')}"
+    ohai "idea-to-circuit.zsh exists: #{File.exist?('idea-to-circuit.zsh')}"
+    
+    # GitHub archives extract to a versioned directory (e.g., idea2circuit-0.0.1)
+    # Find and cd into that directory
+    # Check if we're already in the right directory
+    unless File.exist?("idea-to-circuit.zsh")
+      ohai "File not found in current directory, searching subdirectories..."
+      extracted_dir = Dir.glob("idea2circuit-*").find { |d| File.directory?(d) }
+      if extracted_dir.nil?
+        # Fallback: try to find any directory that contains idea-to-circuit.zsh
+        extracted_dir = Dir.glob("*").find { |d| File.directory?(d) && File.exist?(File.join(d, "idea-to-circuit.zsh")) }
+      end
+      raise "Could not find extracted directory. Current dir: #{Dir.pwd}, Contents: #{Dir.glob('*').inspect}" unless extracted_dir
+      ohai "Changing to directory: #{extracted_dir}"
+      cd extracted_dir
+      ohai "New directory: #{Dir.pwd}"
+      ohai "New contents: #{Dir.glob('*').join(', ')}"
+    end
+    
+    # Install all dependencies (needed for build)
+    system "npm", "ci"
+    
+    # Build TypeScript
+    system "npm", "run", "build"
+    
+    # Prune to production dependencies only
+    system "npm", "prune", "--production"
+    
     # Install the zsh script
     bin.install "idea-to-circuit.zsh"
     
@@ -49,7 +65,7 @@ class FluxCircuits < Formula
     libexec.install "package.json"
     libexec.install "tsconfig.json"
     
-    # Install node_modules (pre-installed dependencies)
+    # Install node_modules (production dependencies)
     libexec.install "node_modules"
     
     # Install .env.example template
