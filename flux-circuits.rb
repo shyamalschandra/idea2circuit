@@ -1,7 +1,7 @@
 # Homebrew formula for Flux Circuits
-# This formula builds from source from the GitHub repository
+# This formula downloads from GitHub Releases (works with private repositories!)
 # To use this formula, place it in your Homebrew tap repository:
-# https://github.com/shyamalschandra/homebrew-idea2circuit
+# https://github.com/shyamalschandra/homebrew-flux-circuits
 
 class FluxCircuits < Formula
   desc "Convert ideas into hardware circuits via C code generation"
@@ -16,9 +16,10 @@ class FluxCircuits < Formula
   depends_on "node"
   depends_on "gcc"
   
-  # Build from source (GitHub repository)
-  url "https://github.com/shyamalschandra/idea2circuit/archive/refs/tags/v#{version}.tar.gz"
-  sha256 "25d13d585f7e1f4e2b9526f97e9e37114939045658a041b56d641670b0bbd878"
+  # Download from GitHub Releases (assets are public even from private repos)
+  # When you create a release, the tarball will be publicly accessible
+  url "https://github.com/shyamalschandra/idea2circuit/releases/download/v#{version}/flux-circuits-v#{version}.tar.gz"
+  sha256 "PLACEHOLDER_UPDATE_AFTER_CREATING_RELEASE"
   
   def install
     # Debug: Print current directory and contents
