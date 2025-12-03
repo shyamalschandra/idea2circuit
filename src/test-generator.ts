@@ -73,7 +73,9 @@ export class TestGenerator {
     
     // Regression tests: Check for common bugs, memory leaks, etc.
     const hasMemoryManagement = code.includes('malloc') && code.includes('free');
-    const hasNoDoubleFree = !code.match(/free\s*\([^)]+\)[\s\S]*free\s*\(\1\)/);
+    // Check for double free by looking for pattern: free(var); ... free(var);
+    const doubleFreePattern = /free\s*\(([^)]+)\)[\s\S]*free\s*\(\1\)/;
+    const hasNoDoubleFree = !doubleFreePattern.test(code);
     const hasBoundsChecking = code.includes('[') && (code.includes('<') || code.includes('>') || code.includes('sizeof'));
     
     for (let i = 0; i < count; i++) {
@@ -194,7 +196,7 @@ export class TestGenerator {
         passed = hasAlternativePaths;
         message = hasAlternativePaths ? 'Alternative execution paths present' : 'Single execution path';
       } else {
-        passed = hasModularity;
+        passed = !!hasModularity;
         message = hasModularity ? 'Modular design detected' : 'Lacks modularity';
       }
 

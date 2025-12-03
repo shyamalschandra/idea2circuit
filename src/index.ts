@@ -183,7 +183,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       }, {} as Record<string, { passed: number; total: number }>);
       
       for (const [type, stats] of Object.entries(testSummary)) {
-        console.log(`${type}: ${stats.passed}/${stats.total} passed`);
+        const stat = stats as { passed: number; total: number };
+        console.log(`${type}: ${stat.passed}/${stat.total} passed`);
       }
       
       console.log('\n⚡ Circuit Schematic:');
