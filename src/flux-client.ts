@@ -14,6 +14,11 @@ export class FluxClient {
   constructor() {
     this.apiKey = FLUX_API_KEY;
     this.apiUrl = FLUX_API_URL;
+    
+    // Validate API key is configured (but allow empty for mock mode)
+    if (!this.apiKey || this.apiKey.trim() === '' || this.apiKey === 'your_flux_api_key_here') {
+      console.warn('⚠️  FLUX_API_KEY is not configured. Flux API calls will use mock mode.');
+    }
   }
 
   /**
@@ -52,6 +57,10 @@ export class FluxClient {
       }
       
       if (error.response) {
+        // Handle authentication errors specifically
+        if (error.response.status === 401 || error.response.status === 403) {
+          throw new Error(`Flux API authentication failed (${error.response.status}): Invalid or expired API key. Please check your FLUX_API_KEY in .env`);
+        }
         throw new Error(`Flux API error: ${error.response.status} - ${error.response.data?.error?.message || 'Unknown error'}`);
       }
       throw new Error(`Failed to connect to Flux API: ${error.message}`);

@@ -13,6 +13,11 @@ export class CursorClient {
   constructor() {
     this.apiKey = CURSOR_API_KEY;
     this.apiUrl = CURSOR_API_URL;
+    
+    // Validate API key is configured
+    if (!this.apiKey || this.apiKey.trim() === '' || this.apiKey === 'your_cursor_api_key_here') {
+      throw new Error('CURSOR_API_KEY is not configured. Please set it in your .env file.');
+    }
   }
 
   /**
@@ -51,6 +56,10 @@ export class CursorClient {
       return this.extractCodeFromResponse(generatedCode);
     } catch (error: any) {
       if (error.response) {
+        // Handle authentication errors specifically
+        if (error.response.status === 401 || error.response.status === 403) {
+          throw new Error(`Cursor API authentication failed (${error.response.status}): Invalid or expired API key. Please check your CURSOR_API_KEY in .env`);
+        }
         throw new Error(`Cursor API error: ${error.response.status} - ${error.response.data?.error?.message || 'Unknown error'}`);
       }
       throw new Error(`Failed to connect to Cursor API: ${error.message}`);
@@ -92,6 +101,13 @@ export class CursorClient {
 
       return this.extractCodeFromResponse(response.data.choices[0].message.content);
     } catch (error: any) {
+      if (error.response) {
+        // Handle authentication errors specifically
+        if (error.response.status === 401 || error.response.status === 403) {
+          throw new Error(`Cursor API authentication failed (${error.response.status}): Invalid or expired API key. Please check your CURSOR_API_KEY in .env`);
+        }
+        throw new Error(`Cursor API error: ${error.response.status} - ${error.response.data?.error?.message || 'Unknown error'}`);
+      }
       throw new Error(`Failed to improve code: ${error.message}`);
     }
   }

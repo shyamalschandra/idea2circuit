@@ -10,3 +10,7 @@ dist/
 temp/
 output/
 .cache/
+# Build artifacts
+flux-circuits-package/
+flux-circuits-universal.tar.gz
+*.tar.gz

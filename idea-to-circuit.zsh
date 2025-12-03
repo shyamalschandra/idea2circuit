@@ -16,8 +16,17 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Script directory
+# Support both Homebrew installation and direct execution
 SCRIPT_DIR="$(cd "$(dirname "${(%):-%x}")" && pwd)"
-PROJECT_DIR="$SCRIPT_DIR"
+
+# Check if running from Homebrew installation
+if [[ "$SCRIPT_DIR" == *"/opt/flux-circuits"* ]] || [[ "$SCRIPT_DIR" == *"/Cellar/flux-circuits"* ]]; then
+    # Homebrew installation - use libexec directory
+    PROJECT_DIR="$(dirname "$SCRIPT_DIR")/libexec"
+else
+    # Direct execution - use script directory
+    PROJECT_DIR="$SCRIPT_DIR"
+fi
 
 # Configuration
 MAX_RETRIES=5
