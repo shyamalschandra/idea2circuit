@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.log
+.env
+*.c
+*.o
+*.out
+*.circuit
+*.schematic
+temp/
+output/
+.cache/
