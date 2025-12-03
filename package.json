@@ -20,13 +20,12 @@
   "author": "Shyamal Chandra",
   "license": "UNLICENSED",
   "dependencies": {
-    "@types/node": "^20.10.0",
     "axios": "^1.6.2",
     "dotenv": "^16.3.1",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0"
+    "@types/node": "^20.19.25"
   }
 }

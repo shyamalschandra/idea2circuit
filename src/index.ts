@@ -42,6 +42,39 @@ export class IdeaToCircuitConverter {
   }
 
   /**
+   * Generate detailed issue descriptions for better error fixing
+   */
+  private async generateDetailedIssues(code: string, errors: string[], warnings: string[]): Promise<string> {
+    const lines = code.split('\n');
+    let details = 'Issues found:\n';
+    
+    // Extract line numbers from errors and show context
+    for (const error of errors.slice(0, 5)) {
+      const lineMatch = error.match(/:(\d+):/);
+      if (lineMatch) {
+        const lineNum = parseInt(lineMatch[1]);
+        details += `\nError at line ${lineNum}:\n`;
+        details += `  ${error}\n`;
+        
+        // Show code context
+        if (lineNum > 0 && lineNum <= lines.length) {
+          const start = Math.max(0, lineNum - 2);
+          const end = Math.min(lines.length, lineNum + 1);
+          details += '  Code context:\n';
+          for (let i = start; i < end; i++) {
+            const marker = i === lineNum - 1 ? '→' : ' ';
+            details += `  ${marker} ${i + 1}: ${lines[i]}\n`;
+          }
+        }
+      } else {
+        details += `\n${error}\n`;
+      }
+    }
+    
+    return details;
+  }
+
+  /**
    * Main conversion pipeline: Idea -> C Code -> Circuit
    */
   async convert(idea: string, target: HardwareTarget, maxRetries: number = 5): Promise<{
@@ -59,27 +92,90 @@ export class IdeaToCircuitConverter {
 
     // Step 2: Recursively improve code until bug-free and warning-free
     console.log('\n🔧 Step 2: Validating and improving code...');
+    console.log('   📊 Initial validation...');
+    
     let validationResult = await this.codeValidator.validateCode(code, maxRetries);
     let attempts = 0;
+    let previousErrors = validationResult.errors.length;
+    let previousWarnings = validationResult.warnings.length;
+
+    // Show initial validation report
+    if (validationResult.errors.length > 0 || validationResult.warnings.length > 0) {
+      const report = await this.codeValidator.generateValidationReport(code);
+      console.log(`\n   📋 Validation Report:`);
+      console.log(`   ${report.summary.split('\n').join('\n   ')}`);
+      
+      // Show top 3 errors if any
+      if (report.errors.length > 0) {
+        console.log(`\n   🔍 Top issues to fix:`);
+        report.errors.slice(0, 3).forEach((err, i) => {
+          console.log(`      ${i + 1}. [Line ${err.line || '?'}] ${err.message}`);
+          if (err.suggestion) {
+            console.log(`         💡 ${err.suggestion}`);
+          }
+        });
+      }
+    }
 
     while ((validationResult.errors.length > 0 || validationResult.warnings.length > 0) && attempts < maxRetries) {
       attempts++;
-      console.log(`   Attempt ${attempts}/${maxRetries}: ${validationResult.errors.length} errors, ${validationResult.warnings.length} warnings`);
+      console.log(`\n   🔄 Revision attempt ${attempts}/${maxRetries}`);
+      console.log(`   📊 Current state: ${validationResult.errors.length} errors, ${validationResult.warnings.length} warnings`);
 
       if (validationResult.errors.length > 0) {
+        console.log(`   🔨 Requesting code improvements for ${validationResult.errors.length} error(s)...`);
+        
+        // Generate detailed issue description
+        const detailedIssues = await this.generateDetailedIssues(code, validationResult.errors, validationResult.warnings);
+        
         code = await this.cursorClient.improveCode(code, validationResult.warnings, validationResult.errors);
+        console.log(`   ✅ Received improved code (${code.split('\n').length} lines)`);
+        
+        // Re-validate
+        console.log(`   🔍 Validating revised code...`);
         validationResult = await this.codeValidator.validateCode(code, 1);
+        
+        // Show progress
+        if (validationResult.errors.length < previousErrors) {
+          console.log(`   ✅ Progress: Fixed ${previousErrors - validationResult.errors.length} error(s)`);
+        } else if (validationResult.errors.length > previousErrors) {
+          console.log(`   ⚠️  Warning: Errors increased from ${previousErrors} to ${validationResult.errors.length}`);
+        }
+        
+        previousErrors = validationResult.errors.length;
+        previousWarnings = validationResult.warnings.length;
+        
       } else if (validationResult.warnings.length > 0) {
+        console.log(`   🔨 Requesting code improvements for ${validationResult.warnings.length} warning(s)...`);
         code = await this.cursorClient.improveCode(code, validationResult.warnings, []);
+        console.log(`   ✅ Received improved code (${code.split('\n').length} lines)`);
+        
+        // Re-validate
+        console.log(`   🔍 Validating revised code...`);
         validationResult = await this.codeValidator.validateCode(code, 1);
+        
+        // Show progress
+        if (validationResult.warnings.length < previousWarnings) {
+          console.log(`   ✅ Progress: Fixed ${previousWarnings - validationResult.warnings.length} warning(s)`);
+        }
+        
+        previousWarnings = validationResult.warnings.length;
       }
     }
 
     if (validationResult.errors.length > 0) {
-      throw new Error(`Failed to fix all errors after ${maxRetries} attempts`);
+      const finalReport = await this.codeValidator.generateValidationReport(code);
+      console.log(`\n   ❌ Final Validation Report:`);
+      console.log(`   ${finalReport.summary.split('\n').join('\n   ')}`);
+      throw new Error(`Failed to fix all errors after ${maxRetries} attempts. Please review the validation report above.`);
     }
 
-    console.log(`✅ Code validated: ${validationResult.warnings.length} warnings (acceptable), 0 errors`);
+    console.log(`\n   ✅ Code validated successfully!`);
+    if (validationResult.warnings.length > 0) {
+      console.log(`   ℹ️  ${validationResult.warnings.length} acceptable warning(s) remain`);
+    } else {
+      console.log(`   ✅ No errors or warnings`);
+    }
 
     // Step 3: Add copyright notice
     console.log('\n©️  Step 3: Adding copyright notice...');

@@ -13,6 +13,16 @@ export interface GeneratedCode {
   lineCount: number;
 }
 
+export interface ValidationIssue {
+  message: string;
+  severity: 'error' | 'warning';
+  line?: number;
+  column?: number;
+  category: 'syntax' | 'semantic' | 'type' | 'undeclared' | 'unused' | 'other';
+  suggestion?: string;
+  fullMessage: string;
+}
+
 export interface TestResult {
   type: 'UX' | 'regression' | 'unit' | 'blackbox' | 'A-B';
   passed: boolean;
